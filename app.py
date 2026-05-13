@@ -163,35 +163,52 @@ def crawl_news(keyword):
     except: pass
     return news_results
 
-@st.cache_data(ttl=1800) # 레딧은 더 자주 업데이트 (30분)
+@st.cache_data(ttl=1800)
 def crawl_reddit_hot(subreddit_list):
     results = []
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
     }
     
+    # 1. 레딧 직접 수집 시도
+    success = False
     for sub in subreddit_list:
         try:
             url = f"https://www.reddit.com/r/{sub}/hot.json?limit=10"
-            res = requests.get(url, headers=headers, timeout=10)
+            res = requests.get(url, headers=headers, timeout=5)
             if res.status_code == 200:
+                success = True
                 data = res.json()
                 posts = data['data']['children']
                 for post in posts:
                     p = post['data']
-                    # 공지글(pinned) 제외 및 데이터 정리
                     if not p['stickied']:
                         results.append({
                             "title": p['title'],
                             "url": "https://www.reddit.com" + p['permalink'],
                             "comments": p['num_comments'],
                             "subreddit": sub,
-                            "ups": p['ups']
+                            "is_fallback": False
                         })
         except: pass
     
-    # 댓글 수 기준으로 내림차순 정렬하여 상위 10개 반환
-    return sorted(results, key=lambda x: x['comments'], reverse=True)[:10]
+    # 2. 직접 수집 실패 시 구글 뉴스를 통한 우회 수집 (백업)
+    if not success or not results:
+        combined_query = " OR ".join([f"site:reddit.com/r/{sub}" for sub in subreddit_list])
+        fallback_news = crawl_news(f"({combined_query}) when:7d")
+        for n in fallback_news:
+            results.append({
+                "title": n['title'].replace(" - reddit", ""),
+                "url": n['link'],
+                "comments": "N/A", # 백업 모드에서는 댓글 수 확인 불가
+                "subreddit": "Reddit",
+                "is_fallback": True
+            })
+    
+    # 직접 수집 데이터는 댓글 순 정렬, 백업 데이터는 수집 순 유지
+    if any(not r['is_fallback'] for r in results):
+        return sorted([r for r in results if not r['is_fallback']], key=lambda x: x['comments'], reverse=True)[:10]
+    return results[:10]
 
 # --- UI 메인 로직 ---
 def main():
