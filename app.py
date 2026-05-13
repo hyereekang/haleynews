@@ -163,6 +163,36 @@ def crawl_news(keyword):
     except: pass
     return news_results
 
+@st.cache_data(ttl=1800) # 레딧은 더 자주 업데이트 (30분)
+def crawl_reddit_hot(subreddit_list):
+    results = []
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+    }
+    
+    for sub in subreddit_list:
+        try:
+            url = f"https://www.reddit.com/r/{sub}/hot.json?limit=10"
+            res = requests.get(url, headers=headers, timeout=10)
+            if res.status_code == 200:
+                data = res.json()
+                posts = data['data']['children']
+                for post in posts:
+                    p = post['data']
+                    # 공지글(pinned) 제외 및 데이터 정리
+                    if not p['stickied']:
+                        results.append({
+                            "title": p['title'],
+                            "url": "https://www.reddit.com" + p['permalink'],
+                            "comments": p['num_comments'],
+                            "subreddit": sub,
+                            "ups": p['ups']
+                        })
+        except: pass
+    
+    # 댓글 수 기준으로 내림차순 정렬하여 상위 10개 반환
+    return sorted(results, key=lambda x: x['comments'], reverse=True)[:10]
+
 # --- UI 메인 로직 ---
 def main():
     st.sidebar.title("🚀 Edu-Job Bot")
@@ -204,26 +234,27 @@ def main():
 
         st.divider()
         
-        # 레딧 글로벌 에듀테크 & 디자인 섹션 고도화
-        st.subheader("🌐 글로벌 에듀테크 & 디자인 인사이트 (Reddit)")
-        st.info("💡 **레딧 활용 팁**: 해외 실무자들의 '날것의 피드백'을 통해 한국 에듀테크 시장의 다음 트렌드를 예측해 보세요.")
+        # 레딧 글로벌 에듀테크 & 디자인 섹션 고도화 (댓글 수 기반)
+        st.subheader("🌐 글로벌 핫 토픽 (Reddit)")
+        st.info("💬 **실시간 논의**: 아래는 현재 글로벌 커뮤니티에서 댓글이 가장 많이 달린 뜨거운 주제들입니다.")
         
-        # 에듀테크, 디자인, AI 교육 관련 서브레딧 타겟팅
-        reddit_query = "(r/EdTech OR r/UXDesign OR r/OpenAI) 'AI education' OR 'learning design' when:7d"
-        reddit_news = crawl_news(reddit_query)
-        if reddit_news:
-            for n in reddit_news:
-                # 제목 정제
-                clean_title = n['title'].replace(" - reddit", "").replace(" : r/EdTech", "").replace(" : r/UXDesign", "")
+        # 에듀테크, 디자인, AI 관련 서브레딧 리스트
+        hot_reddit_posts = crawl_reddit_hot(['EdTech', 'UXDesign', 'OpenAI', 'Technology'])
+        
+        if hot_reddit_posts:
+            for p in hot_reddit_posts:
                 st.markdown(f"""
                 <div class='news-card' style='border-left-color: #FF4500;'>
-                    <a href='{n['link']}' target='_blank' style='text-decoration:none; color:#333;'>
-                    <b>{clean_title}</b></a><br>
-                    <small>Reddit Global Insight</small>
+                    <div style='display:flex; justify-content:space-between;'>
+                        <span style='font-size:0.8em; color:#FF4500; font-weight:bold;'>r/{p['subreddit']}</span>
+                        <span style='font-size:0.8em; color:#888;'>💬 {p['comments']} comments</span>
+                    </div>
+                    <a href='{p['url']}' target='_blank' style='text-decoration:none; color:#333;'>
+                    <b>{p['title']}</b></a>
                 </div>
                 """, unsafe_allow_html=True)
         else:
-            st.write("최근 1주일간 화제가 된 에듀테크/디자인 논의가 없습니다.")
+            st.write("최근 화제가 된 글로벌 논의가 없습니다.")
 
     with tab3:
         st.subheader("🎨 디자인 & 재택근무 채용 공고")
