@@ -194,10 +194,13 @@ def main():
                 </div>""", unsafe_allow_html=True)
 
     with tab2:
-        st.subheader("최신 IT 및 기술 트렌드")
-        news = crawl_news("IT 테크 최신 트렌드 when:7d")
+        st.subheader("🚀 IT 전문 채널 최신 아티클")
+        st.caption("요즘IT, 서핏, 커리어리, 긱뉴스의 최신 기술 트렌드를 모아봅니다.")
+        # 지정된 전문 사이트들에서만 최신글 수집 (site: 연산자 활용)
+        special_query = "(site:yozm.wishket.com OR site:surfit.io OR site:careerly.co.kr OR site:news.hada.io) when:7d"
+        news = crawl_news(special_query)
         for n in news:
-            st.markdown(f"<div class='news-card'><a href='{n['link']}'><b>{n['title']}</b></a><br><small>{n['source']}</small></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='news-card'><a href='{n['link']}' target='_blank' style='text-decoration:none; color:#333;'><b>{n['title']}</b></a><br><small>{n['source']}</small></div>", unsafe_allow_html=True)
 
     with tab3:
         st.subheader("🎨 디자인 & 재택근무 채용 공고")
