@@ -59,6 +59,22 @@ st.markdown("""
         border-right: 1px solid #eee;
     }
     
+    /* 메뉴 버튼 스타일 */
+    .stButton > button {
+        width: 100%;
+        border-radius: 8px;
+        text-align: left;
+        padding: 10px 15px;
+        border: 1px solid #f0f2f6;
+        background-color: white;
+        transition: all 0.3s;
+    }
+    .stButton > button:hover {
+        border-color: #007bff;
+        color: #007bff;
+        background-color: #f8faff;
+    }
+    
     /* 모바일 반응형 대응 */
     @media (max-width: 640px) {
         .job-card, .news-card {
@@ -195,6 +211,10 @@ def crawl_reddit_hot(subreddit_list):
 
 # --- UI 메인 로직 ---
 def main():
+    # 세션 상태 초기화
+    if 'menu' not in st.session_state:
+        st.session_state['menu'] = "🌍 주요 뉴스"
+
     # 사이드바 설정
     st.sidebar.title("🚀 Edu-Job Bot")
     st.sidebar.info(f"업데이트: {datetime.now().strftime('%m-%d %H:%M')}")
@@ -204,28 +224,34 @@ def main():
         st.rerun()
 
     st.sidebar.markdown("---")
+    st.sidebar.subheader("📂 카테고리")
     
-    # 햄버거 메뉴 대용 (사이드바 메뉴)
-    menu = st.sidebar.radio(
-        "📂 카테고리 선택",
-        [
-            "🌍 주요 뉴스", 
-            "💻 IT/테크", 
-            "🎨 취업(디자인/재택)", 
-            "🎪 행사/박람회", 
-            "🏢 회사 / 투자", 
-            "🍱 맛집/여행"
-        ],
-        index=0
-    )
+    # 햄버거 메뉴 대용 (사이드바 버튼 메뉴)
+    menu_items = [
+        "🌍 주요 뉴스", 
+        "💻 IT/테크", 
+        "🎨 취업(디자인/재택)", 
+        "🎪 행사/박람회", 
+        "🏢 회사 / 투자", 
+        "🍱 맛집/여행"
+    ]
+    
+    for item in menu_items:
+        # 현재 선택된 메뉴는 강조 스타일 적용 (Streamlit 기본 버튼은 스타일링이 제한적이므로 CSS 클래스 활용 가능하나 여기선 로직 우선)
+        if st.sidebar.button(item, key=f"btn_{item}", use_container_width=True):
+            st.session_state['menu'] = item
+            st.rerun()
+
     st.sidebar.markdown("---")
     st.sidebar.caption("© 2024 Edu-Job Bot")
 
     # 메인 영역 타이틀
     st.title("📌 실시간 정보 대시보드")
-    st.markdown(f"### {menu}")
     
-    if menu == "🌍 주요 뉴스":
+    current_menu = st.session_state['menu']
+    st.markdown(f"### {current_menu}")
+    
+    if current_menu == "🌍 주요 뉴스":
         st.subheader("오늘의 글로벌/종합 주요 뉴스")
         news = crawl_news("주요 종합 뉴스 when:1d")
         for n in news:
@@ -235,7 +261,7 @@ def main():
                 <small>{n['source']} | {n['pubDate']}</small>
                 </div>""", unsafe_allow_html=True)
 
-    elif menu == "💻 IT/테크":
+    elif current_menu == "💻 IT/테크":
         st.subheader("🚀 IT 전문 채널 최신 아티클")
         st.caption("요즘IT, 서핏, 커리어리, 긱뉴스의 최신 트렌드")
         special_query = "(site:yozm.wishket.com OR site:surfit.io OR site:careerly.co.kr OR site:news.hada.io) when:7d"
@@ -262,7 +288,7 @@ def main():
                 </div>
                 """, unsafe_allow_html=True)
 
-    elif menu == "🎨 취업(디자인/재택)":
+    elif current_menu == "🎨 취업(디자인/재택)":
         st.subheader("🎨 디자인 & 재택근무 채용 공고")
         st.info("🔍 검색 키워드: '재택 디자인'")
         jobs = crawl_jobs()
@@ -288,13 +314,13 @@ def main():
         with col2: st.link_button("사람인 바로가기", "https://www.saramin.co.kr/zf_user/search?searchword=%EC%9E%AC%ED%83%9D%20%EB%94%94%EC%9E%90%EC%9D%B8", use_container_width=True)
         with col3: st.link_button("서핏 바로가기", "https://jobs.surfit.io/", use_container_width=True)
 
-    elif menu == "🎪 행사/박람회":
+    elif current_menu == "🎪 행사/박람회":
         st.subheader("🎪 전시 및 행사 일정")
         news = crawl_news("전시회 박람회 일정 when:30d")
         for n in news:
              st.markdown(f"<div class='news-card'><a href='{n['link']}' target='_blank' style='text-decoration:none; color:#333;'><b>{n['title']}</b></a></div>", unsafe_allow_html=True)
 
-    elif menu == "🏢 회사 / 투자":
+    elif current_menu == "🏢 회사 / 투자":
         st.subheader("🏢 IT 기업 가치 및 투자 트렌드")
         st.markdown("#### 📈 KRX Value-up IT 상위 기업 (PBR 기준)")
         value_up_data = pd.DataFrame({
@@ -323,7 +349,7 @@ def main():
             st.markdown(f"<div class='news-card' style='border-left-color:#6f42c1;'><a href='{n['link']}' target='_blank' style='text-decoration:none; color:#333;'><b>{n['title']}</b></a></div>", unsafe_allow_html=True)
         st.link_button("더 자세한 투자 정보 (The VC)", "https://thevc.kr/", use_container_width=True)
 
-    elif menu == "🍱 맛집/여행":
+    elif current_menu == "🍱 맛집/여행":
         st.subheader("🍱 나의 맛집 지도")
         if 'map_places' not in st.session_state:
             st.session_state['map_places'] = [
