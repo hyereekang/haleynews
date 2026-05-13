@@ -78,7 +78,7 @@ def crawl_jobs():
     # 1. 잡코리아 (업데이트된 셀렉터 대응)
     try:
         jk_url = "https://www.jobkorea.co.kr/Search/?stext=%EC%9E%AC%ED%83%9D+%2B+%EC%9B%B9%EB%94%94%EC%9E%90%EC%9D%B8&tabType=recruit"
-        res = requests.get(jk_url, headers=get_headers())
+        res = requests.get(jk_url, headers=get_headers(), timeout=10)
         soup = BeautifulSoup(res.text, 'html.parser')
         
         # 새로운 JobKorea 구조는 a 태그 내의 GI_Read 링크를 기반으로 수집
@@ -114,8 +114,8 @@ def crawl_jobs():
 
     # 2. 사람인
     try:
-        sr_url = "https://www.saramin.co.kr/zf_user/search?search_area=main&search_done=y&search_optional_item=n&searchType=search&searchword=%EC%9E%AC%ED%83%9D%20%2B%20%EC%9B%B9%EB%94%94%EC%9E%90%EC%9D%B8"
-        res = requests.get(sr_url, headers=get_headers())
+        sr_url = "https://www.saramin.co.kr/zf_user/search?search_area=main&search_done=y&search_optional_item=n&searchType=search&searchword=%EC%9E%AC%ED%83%9D%2B%EC%9B%B9%EB%94%94%EC%9E%90%EC%9D%B8"
+        res = requests.get(sr_url, headers=get_headers(), timeout=10)
         soup = BeautifulSoup(res.text, 'html.parser')
         for item in soup.select('.item_recruit')[:10]:
             title_el = item.select_one('.job_tit a')
@@ -135,7 +135,7 @@ def crawl_jobs():
     try:
         # 서핏 채용 페이지 URL 업데이트
         sf_url = "https://jobs.surfit.io/" 
-        res = requests.get(sf_url, headers=get_headers())
+        res = requests.get(sf_url, headers=get_headers(), timeout=10)
         # 서핏은 현재 SPA 구조로, BeautifulSoup만으로는 데이터 수집이 어렵습니다.
         # 공지용 가상 데이터 또는 간단한 안내 추가
         pass
@@ -151,7 +151,7 @@ def crawl_news(keyword):
     news_results = []
     try:
         rss_url = f"https://news.google.com/rss/search?q={keyword}&hl=ko&gl=KR&ceid=KR:ko"
-        res = requests.get(rss_url)
+        res = requests.get(rss_url, timeout=10)
         soup = BeautifulSoup(res.text, 'xml')
         for item in soup.select('item')[:10]:
             news_results.append({
