@@ -180,12 +180,12 @@ def main():
         "💻 IT/테크", 
         "🎨 취업(디자인/재택)", 
         "🎪 행사/박람회", 
-        "📚 에듀테크"
+        "🏢 회사 / 투자"
     ])
 
     with tab1:
         st.subheader("오늘의 글로벌/종합 주요 뉴스")
-        news = crawl_news("주요 종합 뉴스")
+        news = crawl_news("주요 종합 뉴스 when:1d")
         for n in news:
             st.markdown(f"""<div class='news-card'>
                 <a href='{n['link']}' target='_blank' style='text-decoration:none; color:#333;'>
@@ -243,15 +243,45 @@ def main():
 
     with tab4:
         st.subheader("🎪 전시, 행사 및 박람회 소식")
-        news = crawl_news("전시회 박람회 일정")
+        news = crawl_news("전시회 박람회 일정 when:30d")
         for n in news:
              st.markdown(f"<div class='news-card'><a href='{n['link']}'><b>{n['title']}</b></a></div>", unsafe_allow_html=True)
 
     with tab5:
-        st.subheader("📚 에듀테크 및 교육 혁신 소식")
-        news = crawl_news("에듀테크 미래 교육 혁신 when:7d")
-        for n in news:
-             st.markdown(f"<div class='news-card'><a href='{n['link']}'><b>{n['title']}</b></a></div>", unsafe_allow_html=True)
+        st.subheader("🏢 IT 기업 가치 및 투자 트렌드")
+        
+        # 1. KRX Value-up IT 상위 기업 (조사 데이터 기반)
+        st.markdown("#### 📈 KRX Value-up IT 상위 기업 (PBR 기준)")
+        value_up_data = pd.DataFrame({
+            "순위": [1, 2, 3, 4, 5],
+            "종목명": ["파두", "하이딥", "노타", "클로봇", "한미반도체"],
+            "PBR": [54.39, 39.06, 35.96, 26.09, 17.51],
+            "시가총액": ["약 5조", "미확인", "비상장", "미확인", "약 37.7조"]
+        })
+        st.table(value_up_data)
+        
+        # 2. 경제 지표 해설 Expander
+        with st.expander("🧐 디자이너 & IT 직군을 위한 경제 지표 가이드"):
+            st.markdown("""
+            **이 지표를 왜 봐야 할까요?**
+            - **PBR (주가순자산비율)**: 기업의 '장부상 가치' 대비 주가가 몇 배인지 나타냅니다.
+                - IT/테크 기업은 공장 같은 물리적 자산보다 **'인적 자원(개발/디자인)'**과 **'기술력'**이 핵심이기에 PBR이 높게 형성됩니다.
+                - **인사이트**: PBR이 높을수록 시장은 그 회사의 **디자인 감각, UX, 브랜드 가치**를 높게 평가한다는 뜻입니다.
+            - **시가총액**: 회사의 전체 몸값입니다. 시가총액이 크고 PBR이 높은 회사(예: 한미반도체)는 업계의 트렌드를 주도하는 **'표준'**이 될 확률이 높습니다.
+            """)
+
+        st.divider()
+        
+        # 3. 에듀테크 투자 및 뉴스
+        st.markdown("#### 🎓 에듀테크(EduTech) 투자 및 산업 동향")
+        news = crawl_news("에듀테크 투자 유치 when:14d")
+        if not news:
+            st.write("최근 주요 투자 소식이 없습니다. [The VC](https://thevc.kr/)에서 직접 확인해보세요.")
+        else:
+            for n in news:
+                st.markdown(f"<div class='news-card' style='border-left-color:#6f42c1;'><a href='{n['link']}'><b>{n['title']}</b></a></div>", unsafe_allow_html=True)
+        
+        st.link_button("더 자세한 투자 정보 (The VC)", "https://thevc.kr/", use_container_width=True)
 
 if __name__ == "__main__":
     main()
