@@ -3,6 +3,8 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 from datetime import datetime
+import folium
+from streamlit_folium import st_folium
 
 # 페이지 설정
 st.set_page_config(
@@ -221,13 +223,14 @@ def main():
 
     st.title("📌 실시간 정보 대시보드")
     
-    # 5개 탭 생성
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    # 6개 탭 생성
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
         "🌍 주요 뉴스", 
         "💻 IT/테크", 
         "🎨 취업(디자인/재택)", 
         "🎪 행사/박람회", 
-        "🏢 회사 / 투자"
+        "🏢 회사 / 투자",
+        "🍱 맛집/여행"
     ])
 
     with tab1:
@@ -374,6 +377,69 @@ def main():
                 st.markdown(f"<div class='news-card' style='border-left-color:#6f42c1;'><a href='{n['link']}'><b>{n['title']}</b></a></div>", unsafe_allow_html=True)
         
         st.link_button("더 자세한 투자 정보 (The VC)", "https://thevc.kr/", use_container_width=True)
+
+    with tab6:
+        st.subheader("🍱 나의 맛집 지도: 우리맛집지도")
+        
+        # 1. 지도 데이터 정의 (공유 리스트 기반 주요 거점)
+        if 'map_places' not in st.session_state:
+            st.session_state['map_places'] = [
+                {"name": "부천집", "lat": 37.5028, "lng": 126.7531, "cat": "생선구이", "addr": "경기 부천시 상동 534-1"},
+                {"name": "진주집", "lat": 37.5212, "lng": 126.9242, "cat": "국수", "addr": "서울 영등포구 여의도동 36-2"},
+                {"name": "삼거리먼지막순대국", "lat": 37.4932, "lng": 126.8981, "cat": "순대국", "addr": "서울 영등포구 대림동 963-9"},
+                {"name": "샤브올데이 가산점", "lat": 37.4812, "lng": 126.8831, "cat": "샤브샤브", "addr": "서울 금천구 가산동 60-3"},
+                {"name": "쿄카이젠", "lat": 37.3942, "lng": 126.9631, "cat": "일식당", "addr": "안양 동안구 관양동 1588-13"},
+                {"name": "타르데마 베이커리", "lat": 37.5512, "lng": 126.8371, "cat": "베이커리", "addr": "서울 강서구 내발산동 702-22"},
+                {"name": "소플러스 부천점", "lat": 37.5052, "lng": 126.7511, "cat": "소고기구이", "addr": "경기 부천시 상동 1110"}
+            ]
+
+        # 2. 지도 표시 영역
+        st.markdown("#### 📍 주요 맛집 거점 확인")
+        
+        # 지도 중심점 계산 (평균 위치)
+        m = folium.Map(location=[37.49, 126.85], zoom_start=11, tiles="cartodbpositron")
+        
+        for p in st.session_state['map_places']:
+            folium.Marker(
+                [p['lat'], p['lng']],
+                popup=f"<b>{p['name']}</b><br>{p['cat']}",
+                tooltip=p['name'],
+                icon=folium.Icon(color='green', icon='info-sign')
+            ).add_to(m)
+        
+        # 스트림릿에 지도 렌더링
+        st_folium(m, width="100%", height=400)
+
+        st.divider()
+
+        # 3. 상세 리스트 및 검색
+        col1, col2 = st.columns([2, 1])
+        with col1:
+            st.markdown("#### 📑 전체 리스트")
+            st.link_button("📍 네이버 지도에서 전체보기 (438개)", "https://naver.me/GzdECsoU", use_container_width=True)
+            
+            search_p = st.text_input("🔍 장소 이름 검색", "")
+            for p in st.session_state['map_places']:
+                if search_p.lower() in p['name'].lower():
+                    st.markdown(f"""
+                    <div style='background-color: white; padding: 15px; border-radius: 10px; border-left: 5px solid #00c73c; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);'>
+                        <div style='display:flex; justify-content:space-between;'>
+                            <b>{p['name']}</b>
+                            <span style='color: #00c73c; font-size: 0.85em;'>{p['cat']}</span>
+                        </div>
+                        <div style='font-size: 0.85em; color: #666; margin-top: 5px;'>{p['addr']}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+        
+        with col2:
+            st.markdown("#### 💡 지도 활용 팁")
+            st.info("""
+            - 지도의 마커를 클릭하면 가게 이름을 볼 수 있습니다.
+            - 위 지도는 공유해주신 리스트 중 **주요 거점 7곳**을 우선 표시하고 있습니다.
+            - 새로운 장소를 추가하려면 아래 버튼을 이용하세요.
+            """)
+            if st.button("➕ 새 장소 추가 (준비중)", use_container_width=True):
+                st.toast("추후 업데이트 예정입니다!")
 
 if __name__ == "__main__":
     main()
