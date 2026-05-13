@@ -202,23 +202,12 @@ def main():
     with tab3:
         st.subheader("🎨 디자인 & 재택근무 채용 공고")
         st.info("🔍 현재 검색 키워드는 **'재택 디자인'** 입니다.")
-        st.caption("클라우드 환경에서는 보안 정책상 자동 수집이 제한될 수 있습니다. 아래 버튼을 클릭하여 직접 최신 공고를 확인하세요!")
-        
-        # 직접 바로가기 버튼 섹션
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.link_button("🔍 잡코리아에서 보기", "https://www.jobkorea.co.kr/Search/?stext=%EC%9E%AC%ED%83%9D%20%EB%94%94%EC%9E%90%EC%9D%B8", use_container_width=True)
-        with col2:
-            st.link_button("🔍 사람인에서 보기", "https://www.saramin.co.kr/zf_user/search?searchword=%EC%9E%AC%ED%83%9D%20%EB%94%94%EC%9E%90%EC%9D%B8", use_container_width=True)
-        with col3:
-            st.link_button("🔍 서핏에서 보기", "https://jobs.surfit.io/", use_container_width=True)
-        
-        st.divider()
         
         jobs = crawl_jobs()
-        if not jobs:
-            st.warning("수집된 공고가 없습니다.")
-        else:
+        
+        if jobs:
+            # 수집된 공고가 있는 경우
+            st.caption("실시간으로 수집된 공고 리스트입니다.")
             for job in jobs:
                 st.markdown(f"""
                 <div class='job-card'>
@@ -233,9 +222,21 @@ def main():
                 </div>
                 """, unsafe_allow_html=True)
             
-            # 서핏 안내 추가
-            st.info("💡 **서핏(Surfit)** 공고는 현재 사이트 보안 및 동적 로딩 정책으로 인해 자동 수집이 제한됩니다. 직접 방문하여 최신 공고를 확인해보세요!")
-            st.link_button("서핏 채용 페이지 바로가기", "https://jobs.surfit.io/", use_container_width=True)
+            st.divider()
+            st.caption("더 많은 공고가 궁금하다면?")
+        else:
+            # 수집된 공고가 없는 경우 (차단 또는 오류)
+            st.warning("⚠️ 현재 클라우드 환경의 보안 정책으로 인해 실시간 수집이 제한되고 있습니다.")
+            st.write("아래 버튼을 클릭하여 각 플랫폼에서 최신 공고를 직접 확인하실 수 있습니다.")
+
+        # 공통 바로가기 버튼 (수집 여부와 상관없이 접근 가능하게 하단 배치 또는 실패 시 강조)
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.link_button("🔍 잡코리아에서 보기", "https://www.jobkorea.co.kr/Search/?stext=%EC%9E%AC%ED%83%9D%20%EB%94%94%EC%9E%90%EC%9D%B8", use_container_width=True)
+        with col2:
+            st.link_button("🔍 사람인에서 보기", "https://www.saramin.co.kr/zf_user/search?searchword=%EC%9E%AC%ED%83%9D%20%EB%94%94%EC%9E%90%EC%9D%B8", use_container_width=True)
+        with col3:
+            st.link_button("🔍 서핏에서 보기", "https://jobs.surfit.io/", use_container_width=True)
 
     with tab4:
         st.subheader("🎪 전시, 행사 및 박람회 소식")
