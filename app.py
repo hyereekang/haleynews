@@ -202,6 +202,27 @@ def main():
         for n in news:
             st.markdown(f"<div class='news-card'><a href='{n['link']}' target='_blank' style='text-decoration:none; color:#333;'><b>{n['title']}</b></a><br><small>{n['source']}</small></div>", unsafe_allow_html=True)
 
+        st.divider()
+        
+        # 레딧 글로벌 트렌드 섹션 추가
+        st.subheader("🌐 글로벌 커뮤니티 트렌드 (Reddit)")
+        st.caption("전 세계 IT 실무자들이 현재 가장 많이 논의하는 주제를 살펴봅니다.")
+        reddit_query = "site:reddit.com (r/technology OR r/programming OR r/design) tech trends when:3d"
+        reddit_news = crawl_news(reddit_query)
+        if reddit_news:
+            for n in reddit_news:
+                # 레딧 제목에서 불필요한 부분 제거 및 깔끔한 출력
+                clean_title = n['title'].replace(" - reddit", "").replace(" : r/technology", "")
+                st.markdown(f"""
+                <div class='news-card' style='border-left-color: #FF4500;'>
+                    <a href='{n['link']}' target='_blank' style='text-decoration:none; color:#333;'>
+                    <b>{clean_title}</b></a><br>
+                    <small>Reddit Global Insight</small>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.write("현재 수집된 글로벌 커뮤니티 소식이 없습니다.")
+
     with tab3:
         st.subheader("🎨 디자인 & 재택근무 채용 공고")
         st.info("🔍 현재 검색 키워드는 **'재택 디자인'** 입니다.")
