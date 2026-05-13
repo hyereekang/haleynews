@@ -110,7 +110,7 @@ def crawl_jobs():
                 added_urls.add(href)
                 if len(results) >= 10: break
     except Exception as e:
-        st.warning(f"잡코리아 수집 중 일시적 오류: {e}")
+        pass
 
     # 2. 사람인
     try:
@@ -129,7 +129,7 @@ def crawl_jobs():
                     "tag_class": "tag-sr"
                 })
     except Exception as e:
-        st.warning(f"사람인 수집 중 일시적 오류: {e}")
+        pass
 
     # 3. 서핏 (주의: 서핏은 동적 로딩 방식으로 전환되어 정적 크롤링이 제한적임)
     try:
