@@ -201,7 +201,18 @@ def main():
 
     with tab3:
         st.subheader("🎨 디자인 & 재택근무 채용 공고")
-        st.caption("잡코리아, 사람인, 서핏에서 수집된 정보입니다.")
+        st.caption("클라우드 환경에서는 보안 정책상 자동 수집이 제한될 수 있습니다. 아래 버튼을 클릭하여 직접 최신 공고를 확인하세요!")
+        
+        # 직접 바로가기 버튼 섹션
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.link_button("🔍 잡코리아에서 보기", "https://www.jobkorea.co.kr/Search/?stext=%EC%9E%AC%ED%83%9D%20%EB%94%94%EC%9E%90%EC%9D%B8", use_container_width=True)
+        with col2:
+            st.link_button("🔍 사람인에서 보기", "https://www.saramin.co.kr/zf_user/search?searchword=%EC%9E%AC%ED%83%9D%20%EB%94%94%EC%9E%90%EC%9D%B8", use_container_width=True)
+        with col3:
+            st.link_button("🔍 서핏에서 보기", "https://jobs.surfit.io/", use_container_width=True)
+        
+        st.divider()
         
         jobs = crawl_jobs()
         if not jobs:
