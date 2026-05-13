@@ -195,7 +195,7 @@ def main():
 
     with tab2:
         st.subheader("최신 IT 및 기술 트렌드")
-        news = crawl_news("IT 기술 최신")
+        news = crawl_news("IT 테크 최신 트렌드 when:7d")
         for n in news:
             st.markdown(f"<div class='news-card'><a href='{n['link']}'><b>{n['title']}</b></a><br><small>{n['source']}</small></div>", unsafe_allow_html=True)
 
@@ -246,7 +246,7 @@ def main():
 
     with tab5:
         st.subheader("📚 에듀테크 및 교육 혁신 소식")
-        news = crawl_news("에듀테크 미래 교육")
+        news = crawl_news("에듀테크 미래 교육 혁신 when:7d")
         for n in news:
              st.markdown(f"<div class='news-card'><a href='{n['link']}'><b>{n['title']}</b></a></div>", unsafe_allow_html=True)
 
