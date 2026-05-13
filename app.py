@@ -204,15 +204,17 @@ def main():
 
         st.divider()
         
-        # 레딧 글로벌 트렌드 섹션 추가
-        st.subheader("🌐 글로벌 커뮤니티 트렌드 (Reddit)")
-        st.caption("전 세계 IT 실무자들이 현재 가장 많이 논의하는 주제를 살펴봅니다.")
-        reddit_query = "site:reddit.com (r/technology OR r/programming OR r/design) tech trends when:3d"
+        # 레딧 글로벌 에듀테크 & 디자인 섹션 고도화
+        st.subheader("🌐 글로벌 에듀테크 & 디자인 인사이트 (Reddit)")
+        st.info("💡 **레딧 활용 팁**: 해외 실무자들의 '날것의 피드백'을 통해 한국 에듀테크 시장의 다음 트렌드를 예측해 보세요.")
+        
+        # 에듀테크, 디자인, AI 교육 관련 서브레딧 타겟팅
+        reddit_query = "(r/EdTech OR r/UXDesign OR r/OpenAI) 'AI education' OR 'learning design' when:7d"
         reddit_news = crawl_news(reddit_query)
         if reddit_news:
             for n in reddit_news:
-                # 레딧 제목에서 불필요한 부분 제거 및 깔끔한 출력
-                clean_title = n['title'].replace(" - reddit", "").replace(" : r/technology", "")
+                # 제목 정제
+                clean_title = n['title'].replace(" - reddit", "").replace(" : r/EdTech", "").replace(" : r/UXDesign", "")
                 st.markdown(f"""
                 <div class='news-card' style='border-left-color: #FF4500;'>
                     <a href='{n['link']}' target='_blank' style='text-decoration:none; color:#333;'>
@@ -221,7 +223,7 @@ def main():
                 </div>
                 """, unsafe_allow_html=True)
         else:
-            st.write("현재 수집된 글로벌 커뮤니티 소식이 없습니다.")
+            st.write("최근 1주일간 화제가 된 에듀테크/디자인 논의가 없습니다.")
 
     with tab3:
         st.subheader("🎨 디자인 & 재택근무 채용 공고")
