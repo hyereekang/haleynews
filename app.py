@@ -234,27 +234,28 @@ def main():
 
         st.divider()
         
-        # 레딧 글로벌 에듀테크 & 디자인 섹션 고도화 (댓글 수 기반)
-        st.subheader("🌐 글로벌 핫 토픽 (Reddit)")
-        st.info("💬 **실시간 논의**: 아래는 현재 글로벌 커뮤니티에서 댓글이 가장 많이 달린 뜨거운 주제들입니다.")
+        # 레딧 글로벌 핫 토픽 TOP 10 (댓글 수 기준)
+        st.subheader("🌐 글로벌 핫 토픽 TOP 10")
         
-        # 에듀테크, 디자인, AI 관련 서브레딧 리스트
         hot_reddit_posts = crawl_reddit_hot(['EdTech', 'UXDesign', 'OpenAI', 'Technology'])
         
         if hot_reddit_posts:
-            for p in hot_reddit_posts:
+            for i, p in enumerate(hot_reddit_posts, 1):
                 st.markdown(f"""
-                <div class='news-card' style='border-left-color: #FF4500;'>
-                    <div style='display:flex; justify-content:space-between;'>
-                        <span style='font-size:0.8em; color:#FF4500; font-weight:bold;'>r/{p['subreddit']}</span>
-                        <span style='font-size:0.8em; color:#888;'>💬 {p['comments']} comments</span>
+                <div class='news-card' style='border-left-color: #FF4500; padding: 12px 18px;'>
+                    <div style='display:flex; justify-content:space-between; align-items:center;'>
+                        <div style='flex: 1;'>
+                            <span style='color: #FF4500; font-weight: bold; margin-right: 10px;'>{i}위</span>
+                            <a href='{p['url']}' target='_blank' style='text-decoration:none; color:#333;'><b>{p['title']}</b></a>
+                        </div>
+                        <div style='background: #fff0eb; padding: 2px 8px; border-radius: 20px; font-size: 0.85em; color: #FF4500;'>
+                            💬 {p['comments']}
+                        </div>
                     </div>
-                    <a href='{p['url']}' target='_blank' style='text-decoration:none; color:#333;'>
-                    <b>{p['title']}</b></a>
                 </div>
                 """, unsafe_allow_html=True)
         else:
-            st.write("최근 화제가 된 글로벌 논의가 없습니다.")
+            st.write("실시간 데이터를 불러올 수 없습니다.")
 
     with tab3:
         st.subheader("🎨 디자인 & 재택근무 채용 공고")
