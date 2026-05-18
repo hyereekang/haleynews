@@ -14,6 +14,8 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+import streamlit.components.v1 as components
+
 # 커스텀 CSS (디자인 강화)
 st.markdown("""
     <style>
@@ -82,6 +84,13 @@ st.markdown("""
         }
         .job-card b, .news-card b {
             font-size: 1em;
+        }
+        .job-card {
+            transition: none; /* 배터리 절약 */
+        }
+        .job-card:hover {
+            transform: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.07);
         }
     }
     </style>
@@ -209,6 +218,48 @@ def crawl_reddit_hot(subreddit_list):
         return sorted([r for r in results if not r['is_fallback']], key=lambda x: x['comments'], reverse=True)[:10]
     return results[:10]
 
+@st.cache_data(ttl=3600)
+def search_youtube(keyword, limit=10):
+    import urllib.request
+    import urllib.parse
+    import re
+    import json
+    
+    try:
+        url = 'https://www.youtube.com/results?search_query=' + urllib.parse.quote(keyword)
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'})
+        html = urllib.request.urlopen(req, timeout=10).read().decode('utf-8')
+        
+        match = re.search(r'var ytInitialData = (\{.*?\});</script>', html)
+        if not match: return []
+            
+        data = json.loads(match.group(1))
+        contents = data['contents']['twoColumnSearchResultsRenderer']['primaryContents']['sectionListRenderer']['contents'][0]['itemSectionRenderer']['contents']
+        videos = [item['videoRenderer'] for item in contents if 'videoRenderer' in item]
+        
+        youtube_list = []
+        for v in videos[:limit]:
+            title = v.get('title', {}).get('runs', [{}])[0].get('text', '제목 없음')
+            video_id = v.get('videoId', '')
+            channel = v.get('ownerText', {}).get('runs', [{}])[0].get('text', '알 수 없음')
+            views = v.get('viewCountText', {}).get('simpleText', '')
+            duration = v.get('lengthText', {}).get('simpleText', '')
+            thumbnails = v.get('thumbnail', {}).get('thumbnails', [])
+            thumbnail_url = thumbnails[0]['url'] if thumbnails else ""
+            
+            youtube_list.append({
+                "title": title,
+                "link": f"https://www.youtube.com/watch?v={video_id}",
+                "channel": channel,
+                "duration": duration,
+                "views": views,
+                "thumbnail": thumbnail_url
+            })
+            
+        return youtube_list
+    except Exception as e:
+        return []
+
 # --- UI 메인 로직 ---
 def main():
     # 세션 상태 초기화
@@ -245,35 +296,73 @@ def main():
     st.sidebar.markdown("---")
     st.sidebar.caption("© 2024 Edu-Job Bot")
 
-    # 메인 영역 타이틀
-    st.title("📌 실시간 정보 대시보드")
-    
     current_menu = st.session_state['menu']
-    st.markdown(f"### {current_menu}")
     
     if current_menu == "🌍 주요 뉴스":
         st.subheader("오늘의 글로벌/종합 주요 뉴스")
         news = crawl_news("주요 종합 뉴스 when:1d")
-        for n in news:
+        for n in news[:5]:
             st.markdown(f"""<div class='news-card'>
                 <a href='{n['link']}' target='_blank' style='text-decoration:none; color:#333;'>
                 <b>{n['title']}</b></a><br>
                 <small>{n['source']} | {n['pubDate']}</small>
                 </div>""", unsafe_allow_html=True)
+                
+        if len(news) > 5:
+            with st.expander("🔽 더 많은 뉴스 보기"):
+                for n in news[5:]:
+                    st.markdown(f"""<div class='news-card'>
+                        <a href='{n['link']}' target='_blank' style='text-decoration:none; color:#333;'>
+                        <b>{n['title']}</b></a><br>
+                        <small>{n['source']} | {n['pubDate']}</small>
+                        </div>""", unsafe_allow_html=True)
 
     elif current_menu == "💻 IT/테크":
         st.subheader("🚀 IT 전문 채널 최신 아티클")
         st.caption("요즘IT, 서핏, 커리어리, 긱뉴스의 최신 트렌드")
         special_query = "(site:yozm.wishket.com OR site:surfit.io OR site:careerly.co.kr OR site:news.hada.io) when:7d"
         news = crawl_news(special_query)
-        for n in news:
+        for n in news[:5]:
             st.markdown(f"<div class='news-card'><a href='{n['link']}' target='_blank' style='text-decoration:none; color:#333;'><b>{n['title']}</b></a><br><small>{n['source']}</small></div>", unsafe_allow_html=True)
+            
+        if len(news) > 5:
+            with st.expander("🔽 더 많은 아티클 보기"):
+                for n in news[5:]:
+                    st.markdown(f"<div class='news-card'><a href='{n['link']}' target='_blank' style='text-decoration:none; color:#333;'><b>{n['title']}</b></a><br><small>{n['source']}</small></div>", unsafe_allow_html=True)
+
+        st.divider()
+        st.subheader("📺 추천 IT/테크 유튜브 영상")
+        st.caption("키워드: 'IT 트렌드', '에듀테크' 기반 검색 결과")
+        youtube_videos = search_youtube("IT 트렌드 에듀테크", limit=10)
+        
+        def render_youtube(v):
+            st.markdown(f"""
+            <div class='news-card' style='border-left-color: #ff0000; display:flex; align-items:center;'>
+                <div style='flex-shrink: 0; margin-right: 15px;'>
+                    <img src='{v['thumbnail']}' style='width: 120px; border-radius: 8px; object-fit: cover;'>
+                </div>
+                <div>
+                    <a href='{v['link']}' target='_blank' style='text-decoration:none; color:#333; font-size:1.05em;'><b>{v['title']}</b></a>
+                    <div style='color: #666; font-size: 0.85em; margin-top: 5px;'>
+                        📺 {v['channel']} | 👁️ {v['views']} | ⏱️ {v['duration']}
+                    </div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        if youtube_videos:
+            for v in youtube_videos[:3]:
+                render_youtube(v)
+            if len(youtube_videos) > 3:
+                with st.expander("🔽 더 많은 추천 영상 보기"):
+                    for v in youtube_videos[3:]:
+                        render_youtube(v)
 
         st.divider()
         st.subheader("🌐 글로벌 핫 토픽 TOP 10")
         hot_reddit_posts = crawl_reddit_hot(['EdTech', 'UXDesign', 'OpenAI', 'Technology'])
         if hot_reddit_posts:
-            for i, p in enumerate(hot_reddit_posts, 1):
+            for i, p in enumerate(hot_reddit_posts[:3], 1):
                 st.markdown(f"""
                 <div class='news-card' style='border-left-color: #FF4500;'>
                     <div style='display:flex; justify-content:space-between; align-items:center;'>
@@ -287,13 +376,30 @@ def main():
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
+            
+            if len(hot_reddit_posts) > 3:
+                with st.expander("🔽 전체 TOP 10 보기"):
+                    for i, p in enumerate(hot_reddit_posts[3:], 4):
+                        st.markdown(f"""
+                        <div class='news-card' style='border-left-color: #FF4500;'>
+                            <div style='display:flex; justify-content:space-between; align-items:center;'>
+                                <div style='flex: 1;'>
+                                    <span style='color: #FF4500; font-weight: bold; margin-right: 10px;'>{i}위</span>
+                                    <a href='{p['url']}' target='_blank' style='text-decoration:none; color:#333;'><b>{p['title']}</b></a>
+                                </div>
+                                <div style='background: #fff0eb; padding: 2px 8px; border-radius: 20px; font-size: 0.85em; color: #FF4500;'>
+                                    💬 {p['comments']}
+                                </div>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
 
     elif current_menu == "🎨 취업(디자인/재택)":
         st.subheader("🎨 디자인 & 재택근무 채용 공고")
         st.info("🔍 검색 키워드: '재택 디자인'")
         jobs = crawl_jobs()
         if jobs:
-            for job in jobs:
+            for job in jobs[:5]:
                 st.markdown(f"""
                 <div class='job-card'>
                     <div class='platform-tag {job.get('tag_class', '')}'>{job['platform']}</div>
@@ -306,6 +412,22 @@ def main():
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
+                
+            if len(jobs) > 5:
+                with st.expander("🔽 더 많은 채용 공고 보기"):
+                    for job in jobs[5:]:
+                        st.markdown(f"""
+                        <div class='job-card'>
+                            <div class='platform-tag {job.get('tag_class', '')}'>{job['platform']}</div>
+                            <div style='font-size:1.1em; margin-bottom:10px;'>
+                                <a href='{job['url']}' target='_blank' style='text-decoration:none; color:#333;'><b>{job['title']}</b></a>
+                            </div>
+                            <div style='display:flex; justify-content:space-between; color:#666; font-size:0.9em;'>
+                                <span>🏢 {job['company']}</span>
+                                <span>📅 {job['date']}</span>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
         else:
             st.warning("실시간 수집 제한 중. 아래 링크를 이용하세요.")
         
@@ -315,10 +437,42 @@ def main():
         with col3: st.link_button("서핏 바로가기", "https://jobs.surfit.io/", use_container_width=True)
 
     elif current_menu == "🎪 행사/박람회":
-        st.subheader("🎪 전시 및 행사 일정")
-        news = crawl_news("전시회 박람회 일정 when:30d")
-        for n in news:
-             st.markdown(f"<div class='news-card'><a href='{n['link']}' target='_blank' style='text-decoration:none; color:#333;'><b>{n['title']}</b></a></div>", unsafe_allow_html=True)
+        st.subheader("🎪 전국 행사 및 박람회 일정")
+        st.caption("💡 구글 '전국행사' 검색 상위 트렌드 (인기/관련도 순)")
+        
+        # 구글 검색(RSS)이 판단한 관련도/화제성 상위 결과를 가져옵니다.
+        news = crawl_news("전국행사 when:30d")
+        for i, n in enumerate(news[:5], 1):
+            st.markdown(f"""
+            <div class='news-card' style='border-left-color: #ffca28;'>
+                <div style='display:flex; align-items:flex-start;'>
+                    <span style='color: #f57f17; font-weight: bold; font-size: 1.1em; margin-right: 12px;'>{i}</span>
+                    <div>
+                        <a href='{n['link']}' target='_blank' style='text-decoration:none; color:#333; font-size: 1.05em;'><b>{n['title']}</b></a>
+                        <div style='margin-top: 5px;'><small style='color:#666;'>{n['source']} | {n['pubDate']}</small></div>
+                    </div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        if len(news) > 5:
+            with st.expander("🔽 더 많은 행사 보기"):
+                for i, n in enumerate(news[5:], 6):
+                    st.markdown(f"""
+                    <div class='news-card' style='border-left-color: #ffca28;'>
+                        <div style='display:flex; align-items:flex-start;'>
+                            <span style='color: #f57f17; font-weight: bold; font-size: 1.1em; margin-right: 12px;'>{i}</span>
+                            <div>
+                                <a href='{n['link']}' target='_blank' style='text-decoration:none; color:#333; font-size: 1.05em;'><b>{n['title']}</b></a>
+                                <div style='margin-top: 5px;'><small style='color:#666;'>{n['source']} | {n['pubDate']}</small></div>
+                            </div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+            
+        st.divider()
+        st.markdown("#### 🎯 추천 행사/레퍼런스 사이트")
+        st.link_button("🌸 서울시 축제 공식 홈페이지 방문하기", "https://festival.seoul.go.kr/festival/main/festivalMain.do", use_container_width=True)
 
     elif current_menu == "🏢 회사 / 투자":
         st.subheader("🏢 IT 기업 가치 및 투자 트렌드")
@@ -362,10 +516,15 @@ def main():
                 {"name": "소플러스 부천점", "lat": 37.5052, "lng": 126.7511, "cat": "소고기구이", "addr": "경기 부천시 상동 1110"}
             ]
 
-        m = folium.Map(location=[37.49, 126.85], zoom_start=11, tiles="cartodbpositron")
-        for p in st.session_state['map_places']:
-            folium.Marker([p['lat'], p['lng']], popup=p['name'], tooltip=p['name']).add_to(m)
-        st_folium(m, width="100%", height=400)
+        st.info("💡 모바일 배터리 절약을 위해 지도는 클릭 시에만 로드됩니다.")
+        if st.button("🗺️ 인터랙티브 지도 열기 / 닫기", use_container_width=True):
+            st.session_state['show_map'] = not st.session_state.get('show_map', False)
+            
+        if st.session_state.get('show_map', False):
+            m = folium.Map(location=[37.49, 126.85], zoom_start=11, tiles="cartodbpositron")
+            for p in st.session_state['map_places']:
+                folium.Marker([p['lat'], p['lng']], popup=p['name'], tooltip=p['name']).add_to(m)
+            st_folium(m, width="100%", height=400)
 
         st.divider()
         col1, col2 = st.columns([2, 1])
@@ -380,6 +539,39 @@ def main():
             st.info("지도의 마커를 클릭해 보세요!")
             if st.button("➕ 추가 (준비중)", use_container_width=True):
                 st.toast("곧 업데이트됩니다!")
+
+    # 모바일 등 좁은 화면에서 사이드바 외부(메인 영역) 클릭 시 자연스럽게 접히도록 하는 자바스크립트
+    components.html(
+        """
+        <script>
+        const doc = window.parent.document;
+        doc.addEventListener('click', function(event) {
+            const sidebar = doc.querySelector('[data-testid="stSidebar"]');
+            
+            // 사이드바 바깥(메인 영역)을 클릭했을 때
+            if (sidebar && !sidebar.contains(event.target)) {
+                // 입력창, 버튼, 링크 등 상호작용이 필요한 요소가 아닌 일반 배경을 클릭했을 때만 동작
+                const tagName = event.target.tagName;
+                const isInteractive = ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON', 'A'].includes(tagName);
+                
+                if (!isInteractive) {
+                    // ESC 키 이벤트를 발생시켜 사이드바 닫기 (Streamlit 기본 단축키)
+                    const escEvent = new KeyboardEvent('keydown', {
+                        key: 'Escape',
+                        code: 'Escape',
+                        keyCode: 27,
+                        which: 27,
+                        bubbles: true
+                    });
+                    doc.dispatchEvent(escEvent);
+                }
+            }
+        });
+        </script>
+        """,
+        height=0,
+        width=0
+    )
 
 if __name__ == "__main__":
     main()
